@@ -153,6 +153,7 @@ export class UsersController {
   // public id
   @ApiOkResponse({ type: GetAuthorDetailByIdDto })
   @Get('author/:id')
+  @Roles(RoleEnum.reader, RoleEnum.admin)
   @HttpCode(HttpStatus.OK)
   @ApiParam({
     name: 'id',
