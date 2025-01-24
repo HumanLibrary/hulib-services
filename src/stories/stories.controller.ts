@@ -27,7 +27,10 @@ import { FindAllStoriesDto } from './dto/find-all-stories.dto';
 import { User } from '../users/domain/user';
 import { UsersService } from '../users/users.service';
 import { StoryReview } from '../story-review/domain/story-review';
-import { storyReviewOverviewData, storyReviewsData } from '../story-review/story-reviews.data';
+import {
+  storyReviewOverviewData,
+  storyReviewsData,
+} from '../story-review/story-reviews.data';
 import { storiesData } from './stories.data';
 
 @ApiTags('Stories')
@@ -58,23 +61,25 @@ export class StoriesController {
   async findAll(
     @Query() query: FindAllStoriesDto,
   ): Promise<InfinityPaginationResponseDto<Story>> {
-    // const page = query?.page ?? 1;
-    // let limit = query?.limit ?? 10;
+    const page = query?.page ?? 1;
+    const limit = query?.limit ?? 10;
 
-    // return infinityPagination(
-    //   await this.storiesService.findAllWithPagination({
-    //     paginationOptions: {
-    //       page,
-    //       limit,
-    //     },
-    //   }),
-    //   { page, limit },
-    // );
+    // bypass eslint
+    const paginatedRes = infinityPagination(
+      await this.storiesService.findAllWithPagination({
+        paginationOptions: {
+          page,
+          limit,
+        },
+      }),
+      { page, limit },
+    );
+    console.log(paginatedRes);
 
     return {
       data: storiesData,
-      hasNextPage: false
-    }
+      hasNextPage: false,
+    };
   }
 
   @Get(':id')
@@ -87,7 +92,8 @@ export class StoriesController {
     type: Story,
   })
   findOne(@Param('id') id: Story['id']) {
-    return storiesData[0]
+    console.log(id);
+    return storiesData[0];
   }
 
   @Get(':id/similar')
@@ -99,11 +105,25 @@ export class StoriesController {
   @ApiOkResponse({
     type: InfinityPaginationResponse(Story),
   })
-  getSimilarStories(@Param('id') id: Story['id']) {
-    return {
-      data: storiesData,
-      hasNextPage: false,
+  async getSimilarStories(
+    @Param('id') id: Story['id'],
+    @Query() query: FindAllStoriesDto,
+  ): Promise<InfinityPaginationResponseDto<Story>> {
+    const page = query?.page ?? 1;
+    let limit = query?.limit ?? 10;
+    if (limit > 50) {
+      limit = 50;
     }
+
+    const similarStories = await this.storiesService.findSimilarStories({
+      paginationOptions: {
+        page,
+        limit,
+      },
+      id,
+    });
+
+    return infinityPagination(similarStories, { page, limit });
   }
 
   @Patch(':id')
@@ -169,10 +189,11 @@ export class StoriesController {
     type: InfinityPaginationResponse(StoryReview),
   })
   getReviews(@Param('id') id: Story['id']) {
+    console.log(id);
     return {
       data: storyReviewsData,
       hasNextPage: false,
-    }
+    };
   }
 
   @Get(':id/reviews-overview')
@@ -182,6 +203,7 @@ export class StoriesController {
     required: true,
   })
   getReviewsOverview(@Param('id') id: Story['id']) {
+    console.log(id);
     return storyReviewOverviewData;
   }
 }
